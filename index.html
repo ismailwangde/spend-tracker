@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spend Tracker</title>
+<meta name="description" content="Every bank SMS on your iPhone lands in your own Google Sheet, sorted into categories. Free. No app, no bank login.">
+<style>
+  :root {
+    --bg: #fbfaf7; --card: #ffffff; --ink: #1d1d1b; --ink2: #5c5b55; --line: #e7e4dc;
+    --accent: #1f6feb; --accent-ink: #ffffff; --good: #137333; --soft: #eef4ff;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #151514; --card: #1f1f1d; --ink: #f2f1ec; --ink2: #b3b1a8; --line: #33322e;
+      --accent: #5b9dff; --accent-ink: #0b1220; --good: #6fcf8f; --soft: #1b2638;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #151514; --card: #1f1f1d; --ink: #f2f1ec; --ink2: #b3b1a8; --line: #33322e;
+    --accent: #5b9dff; --accent-ink: #0b1220; --good: #6fcf8f; --soft: #1b2638;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 17px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 640px; margin: 0 auto; padding: 32px 16px 56px; }
+  h1 { font-size: 34px; line-height: 1.15; margin: 0 0 12px; letter-spacing: -0.02em; }
+  h2 { font-size: 22px; margin: 40px 0 12px; }
+  h3 { font-size: 18px; margin: 0 0 6px; }
+  p { margin: 0 0 12px; }
+  .lede { font-size: 19px; color: var(--ink2); }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 18px; margin: 14px 0; }
+  .flow { display: flex; align-items: center; gap: 10px; font-weight: 600; margin-bottom: 12px; flex-wrap: wrap; }
+  .flow span { background: var(--soft); border-radius: 10px; padding: 6px 10px; }
+  ul.checks { list-style: none; padding: 0; margin: 0; }
+  ul.checks li { padding-left: 28px; position: relative; margin: 8px 0; }
+  ul.checks li::before { content: "✓"; position: absolute; left: 4px; color: var(--good); font-weight: 700; }
+  ol.steps { list-style: none; padding: 0; margin: 0; counter-reset: s; }
+  ol.steps > li { counter-increment: s; position: relative; padding: 18px 18px 18px 64px; }
+  ol.steps > li::before { content: counter(s); position: absolute; left: 18px; top: 18px; width: 32px; height: 32px; border-radius: 50%;
+    background: var(--accent); color: var(--accent-ink); font-weight: 700; display: grid; place-items: center; }
+  ol.sub { margin: 8px 0 0; padding-left: 20px; }
+  ol.sub li { margin: 4px 0; }
+  .btn { display: block; text-align: center; background: var(--accent); color: var(--accent-ink); text-decoration: none; font-weight: 600;
+    border-radius: 12px; padding: 14px 16px; margin: 12px 0 4px; }
+  .btn.secondary { background: transparent; color: var(--accent); border: 1.5px solid var(--accent); }
+  .note { font-size: 15px; color: var(--ink2); }
+  .quote { font-size: 15px; background: var(--soft); border-radius: 10px; padding: 8px 12px; margin: 8px 0; }
+  b.ui { font-weight: 600; }
+  details { border-top: 1px solid var(--line); padding: 12px 0; }
+  details:last-of-type { border-bottom: 1px solid var(--line); }
+  summary { cursor: pointer; font-weight: 600; }
+  details p { margin-top: 8px; color: var(--ink2); }
+  a { color: var(--accent); }
+  footer { margin-top: 40px; font-size: 14px; color: var(--ink2); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Your bank SMS, in your own Google Sheet</h1>
+  <p class="lede">Every UPI, card and bank payment on your iPhone shows up in a Google Sheet that only you own, sorted into categories. Free. No app, no bank login.</p>
+
+  <div class="card">
+    <div class="flow"><span>Your iPhone</span> → <span>Your Google Sheet</span></div>
+    <ul class="checks">
+      <li>Everything stays in your Google account. Nobody else can see it, including the person who made this.</li>
+      <li>The script can open only this one spreadsheet. It has no access to your Gmail, Drive or other files, and Google's permission screen says exactly that.</li>
+      <li>OTP messages are dropped on your phone and never sent anywhere.</li>
+      <li>All the code is public: <a href="https://github.com/ismailwangde/spend-tracker">read it on GitHub</a>.</li>
+    </ul>
+  </div>
+
+  <h2>Before you start</h2>
+  <p>You need an iPhone on iOS 26 or later and your <b>personal</b> Google account (not a work or school one). It takes about 5 minutes, all on your phone.</p>
+  <p class="note">If Safari is signed in to more than one Google account, check that the right one is selected at each Google screen.</p>
+
+  <h2>Set it up</h2>
+  <ol class="steps">
+    <li class="card">
+      <h3>Make your copy</h3>
+      <p>Google asks <b class="ui">Make a copy?</b> Tap it. Your copy opens in Safari.</p>
+      <a class="btn" href="https://docs.google.com/spreadsheets/d/1UtuPZoZXz4YGXaSS0y_rEscGVijfh5A-f_1N8e2gOnk/copy">Make my copy</a>
+    </li>
+    <li class="card">
+      <h3>Switch it on</h3>
+      <p>In your copy, in Safari:</p>
+      <ol class="sub">
+        <li>Tap <b class="ui">aA</b> (or <b class="ui">⋯</b>) → <b class="ui">Request Desktop Website</b>.</li>
+        <li><b class="ui">Extensions → Apps Script</b>.</li>
+        <li><b class="ui">Deploy → New deployment → Deploy</b>.</li>
+        <li><b class="ui">Authorize access</b> → your account → <b class="ui">Continue</b>. Google shows the only permission it needs:
+          <div class="quote">View and manage spreadsheets that this application has been installed in.</div></li>
+        <li>Copy the <b class="ui">Web app URL</b>.</li>
+      </ol>
+    </li>
+    <li class="card">
+      <h3>Add the two shortcuts</h3>
+      <p>Tap each one, then <b class="ui">Add Shortcut</b>.</p>
+      <a class="btn" href="shortcuts/Spend%20Tracker.shortcut">Add “Spend Tracker”</a>
+      <a class="btn secondary" href="shortcuts/Spend%20Tracker%20Auto.shortcut">Add “Spend Tracker Auto”</a>
+      <p class="note">“Spend Tracker Auto” runs Spend Tracker when a bank SMS arrives. Reinstalling? Delete the old ones first, or the SMS triggers get lost.</p>
+    </li>
+    <li class="card">
+      <h3>Connect</h3>
+      <p>Open <b class="ui">Shortcuts</b>, tap <b class="ui">Spend Tracker</b> and paste the Web app URL. Allow what it asks. You'll see <b class="ui">Connected ✅</b>.</p>
+    </li>
+  </ol>
+  <p><b>Done.</b> Your next bank SMS appears in your Sheet within about a minute.</p>
+
+  <h2>Using it</h2>
+  <ul class="checks">
+    <li><b>Categories:</b> pick one in the Transactions tab. It's remembered for that payee from then on.</li>
+    <li><b>Cash:</b> tap Spend Tracker any time and enter the amount.</li>
+    <li><b>Same small payment every morning</b>, like auto fares? The Sheet asks you once. You can also add your own rule in the Rules tab.</li>
+    <li><b>Summary</b> and <b>Analytics</b> show each month and each category.</li>
+  </ul>
+
+  <h2>Questions</h2>
+  <details><summary>Which banks work?</summary>
+    <p>Debit and card SMS from most Indian banks, including HDFC, SBI, ICICI, Axis, Kotak, Union Bank, PNB, Bank of Baroda, Canara and IDFC FIRST. If a message isn't counted, it appears in the Skipped tab with the reason.</p></details>
+  <details><summary>Does it read all my messages?</summary>
+    <p>No. It runs only on messages containing “debit”, “spent” or “sent Rs”. OTP messages are dropped on your phone. Anything that isn't a bank payment is ignored and not saved.</p></details>
+  <details><summary>New phone?</summary>
+    <p>In the Setup tab of your Sheet, type <b>yes</b> next to “New phone?”. Then add the shortcuts on the new phone and run Spend Tracker once.</p></details>
+  <details><summary>How do I stop it or remove it?</summary>
+    <p>Delete the two shortcuts. To remove the script's access, go to <a href="https://myaccount.google.com/permissions">myaccount.google.com/permissions</a> → Spend Tracker → Remove access. Deleting the Sheet deletes everything.</p></details>
+  <details><summary>Android?</summary>
+    <p>Not yet.</p></details>
+  <details><summary>Does it cost anything?</summary>
+    <p>No, it's free.</p></details>
+
+  <footer>
+    <p>A personal project, provided as-is for personal use. Not affiliated with any bank, Google or Apple. This page uses no cookies or trackers.</p>
+  </footer>
+</main>
+</body>
+</html>
