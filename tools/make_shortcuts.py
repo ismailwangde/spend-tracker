@@ -1,7 +1,8 @@
 """Builds and signs the two iOS shortcuts for Spend Tracker v1.
 
   Spend Tracker.shortcut       - first run asks for the Web app URL and connects; after that it logs SMS
-                                 (automation / share sheet) or asks for a cash amount (run by hand)
+                                 (automation / share sheet) or asks for a cash amount (run by hand).
+                                 If the saved code stops working, a manual run reconnects.
   Spend Tracker Auto.shortcut  - message automation (ebit / pent / ent Rs) that runs it on bank SMS.
                                  Works on iOS 26 only when the triggers have no Sender field.
 
@@ -128,17 +129,14 @@ def save(src):
                WFFileDestinationPath=CODE_FILE, WFSaveFileOverwrite=True)
 
 
-def main_shortcut():
-    q, f, claim_url, claim, code, err, pasted = (new_id() for _ in range(7))
-    conn, match, sent, note, amount, what, cash, msg, code_text = (new_id() for _ in range(9))
-    g_new, g_ok, g_paste, g_sms, g_otp, g_note = (new_id() for _ in range(6))
-    connected = alert('Connected ✅', tok('Your Sheet is connected.\n\nLast step: switch on the automations.'))
-    actions = [
-        act('documentpicker.open', UUID=f, WFGetFilePath=CODE_FILE, WFFileErrorIfNotFound=False,
-            WFShowFilePicker=False),
-        # First run: claim the connection code and keep it in a file.
-        if_(g_new, out(f, 'File'), NO_VALUE),
-        ask(q, 'Paste your Web app URL\n(Apps Script → Deploy → Manage deployments → Web app URL)'),
+def connect(prompt):
+    """Ask for the Web app URL, claim a connection code and save it, then stop.
+    Falls back to pasting the code from the Setup tab (e.g. when the Sheet is already connected)."""
+    q, claim_url, claim, code, code_text, err, pasted = (new_id() for _ in range(7))
+    g_ok, g_paste = new_id(), new_id()
+    done = [alert('Connected ✅', tok('Your Sheet is connected.')), *open_done_page()]
+    return [
+        ask(q, prompt),
         text(claim_url, tok(out(q, 'Provided Input'), '?claim=1')),
         fetch(claim, tok(out(claim_url, 'Text'))),
         value(code, 'code', out(claim, 'Contents of URL')),
@@ -146,20 +144,30 @@ def main_shortcut():
         # Same checks and save as the paste path below, which is known to work on iOS 26.
         if_(g_ok, out(code_text, 'Text'), CONTAINS, 'k='),
         save(out(code_text, 'Text')),
-        connected,
-        *open_done_page(),
+        *done,
         else_(g_ok),
         value(err, 'error', out(claim, 'Contents of URL')),
         ask(pasted, tok("Couldn't connect. ", out(err, 'Dictionary Value'),
                         '\n\nIf the Setup tab of your Sheet shows a connection code, paste it here. '
-                        'Otherwise check the Web app URL and add the shortcut again.')),
+                        'Otherwise check the Web app URL and try again.')),
         if_(g_paste, out(pasted, 'Provided Input'), CONTAINS, 'k='),
         save(out(pasted, 'Provided Input')),
-        alert('Connected ✅', tok('Your Sheet is connected.')),
-        *open_done_page(),
+        *done,
         end(g_paste),
         end(g_ok),
         act('exit'),
+    ]
+
+
+def main_shortcut():
+    f, conn, match, sent, note, sms_err, check, check_err, amount, what, cash, msg = (new_id() for _ in range(12))
+    g_new, g_sms, g_otp, g_note, g_lost, g_stale = (new_id() for _ in range(6))
+    actions = [
+        act('documentpicker.open', UUID=f, WFGetFilePath=CODE_FILE, WFFileErrorIfNotFound=False,
+            WFShowFilePicker=False),
+        # First run: connect and keep the code in a file.
+        if_(g_new, out(f, 'File'), NO_VALUE),
+        *connect('Paste your Web app URL\n(Apps Script → Deploy → Manage deployments → Web app URL)'),
         end(g_new),
         act('detect.text', UUID=conn, WFInput=att(out(f, 'File'))),
         # From an automation or the share sheet: send the SMS, unless it is an OTP.
@@ -173,8 +181,19 @@ def main_shortcut():
         if_(g_note, out(note, 'Dictionary Value'), HAS_VALUE),
         notify(tok(out(note, 'Dictionary Value'))),
         end(g_note),
-        # Run by hand: a cash expense.
+        # The saved code stopped working (new copy of the Sheet, or "New phone?" was used).
+        value(sms_err, 'error', out(sent, 'Contents of URL')),
+        if_(g_lost, out(sms_err, 'Dictionary Value'), CONTAINS, 'bad code'),
+        notify(tok("Spend Tracker isn't connected to your Sheet any more. Open Shortcuts and tap Spend Tracker to fix it.")),
+        end(g_lost),
+        # Run by hand: check the connection, then a cash expense.
         else_(g_sms),
+        fetch(check, tok(out(conn, 'Text'))),
+        value(check_err, 'error', out(check, 'Contents of URL')),
+        if_(g_stale, out(check_err, 'Dictionary Value'), CONTAINS, 'bad code'),
+        *connect('This phone is no longer connected to your Sheet (a new copy, or "New phone?" was used).\n\n'
+                 'Paste your Web app URL to connect again:'),
+        end(g_stale),
         ask(amount, 'Cash spent (₹)', 'Number'),
         ask(what, 'What was it for?', 'Text', 'Cash'),
         fetch(cash, tok(out(conn, 'Text')), 'POST',
