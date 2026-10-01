@@ -4,22 +4,22 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Spend Tracker</title>
-<meta name="description" content="Every bank SMS on your iPhone lands in your own Google Sheet, sorted into categories. Free. No app, no bank login.">
+<meta name="description" content="Every bank payment you get an SMS for shows up on your iPhone home screen, sorted into categories. Free. No sign-up, no bank login.">
 <link rel="stylesheet" href="style.css">
 <script data-goatcounter="https://spendtracker.goatcounter.com/count" async src="https://gc.zgo.at/count.v5.js"
         integrity="sha384-atnOLvQb9t+jTSipvd75X2yginT4PjVbqDdlJAmxMm+wYElFmeR6EmLP5bYeoRVQ" crossorigin="anonymous"></script>
 </head>
 <body>
 <main>
-  <h1>Your bank SMS, in your own Google Sheet and on your home screen</h1>
-  <p class="lede">Every bank payment you get an SMS for shows up on your home screen and in a Google Sheet you own, sorted into categories. Free. No bank login.</p>
+  <h1>Your bank SMS, on your home screen</h1>
+  <p class="lede">Every bank payment you get an SMS for shows up on your iPhone home screen, sorted into categories. Free. No sign-up, no bank login.</p>
 
   <div class="card">
-    <div class="flow"><span>Your iPhone</span> → <span>Your Google Sheet</span> → <span>Home screen</span></div>
+    <div class="flow"><span>Bank SMS</span> → <span>Your iPhone</span> → <span>Home screen</span></div>
     <ul class="checks">
-      <li>Everything stays in your Google account. Nobody else can see it, including the person who made this.</li>
-      <li>The script can open only this one spreadsheet. It has no access to your Gmail, Drive or other files.</li>
-      <li>OTP messages are processed on your phone and never sent anywhere.</li>
+      <li>Everything stays on your iPhone and in your own iCloud Drive. Nothing is sent anywhere, not even to the person who made this.</li>
+      <li>No account to make, no Google sign-in, no bank login.</li>
+      <li>OTP messages are processed on your phone and never stored.</li>
       <li>All the code is public: <a href="https://github.com/ismailwangde/spend-tracker">read it on GitHub</a>.</li>
     </ul>
   </div>
@@ -27,67 +27,56 @@
   <h2>Before you start</h2>
   <ul class="checks">
     <li>iOS 26 or later.</li>
-    <li>Only one Google account signed in, and it's a <b>personal</b> one (not work or school).</li>
-    <li>About 5 minutes, all on your phone.</li>
+    <li>About 3 minutes, all on your phone.</li>
   </ul>
 
   <h2>Set it up</h2>
   <ol class="steps">
     <li class="card">
-      <h3>Make your copy</h3>
-      <p>Google asks <b class="ui">Make a copy?</b> Tap it. Your copy opens in Safari.</p>
-      <a class="btn" data-goatcounter-click="make-copy" href="https://docs.google.com/spreadsheets/d/1UtuPZoZXz4YGXaSS0y_rEscGVijfh5A-f_1N8e2gOnk/copy">Make my copy</a>
+      <h3>Get Scriptable</h3>
+      <p>A free app that saves your payments and draws the widget. <b>Open it once</b> after installing.</p>
+      <a class="btn secondary" data-goatcounter-click="get-scriptable" href="https://apps.apple.com/app/scriptable/id1405459188">Get Scriptable on the App Store</a>
     </li>
     <li class="card">
-      <h3>Switch it on</h3>
-      <p>In your copy, in Safari:</p>
-      <ol class="sub">
-        <li>Tap <b class="ui">aA</b> (or the <b class="ui">☰</b> icon left of docs.google.com) → <b class="ui">Request Desktop Website</b>.</li>
-        <li><b class="ui">Extensions → Apps Script</b>.</li>
-        <li><b class="ui">Deploy → New deployment</b>. Check that <b class="ui">Who has access</b> says <b class="ui">Anyone</b>, then tap <b class="ui">Deploy</b>.
-          <div class="quote">“Anyone” only means your shortcut can reach your Sheet without signing in. Nobody can read anything without your phone's connection code.</div></li>
-        <li><b class="ui">Authorize access</b> → your account → <b class="ui">Continue</b>.</li>
-        <li>Copy the <b class="ui">Web app URL</b>.</li>
-      </ol>
-    </li>
-    <li class="card">
-      <h3>Add the two shortcuts</h3>
-      <p>Tap each button. Safari downloads the file: tap the <b class="ui">downloads</b> icon in the address bar, tap the file, then <b class="ui">Add Shortcut</b>.</p>
+      <h3>Add the shortcut</h3>
+      <p>Tap the button. Safari downloads the file: tap the <b class="ui">downloads</b> icon in the address bar, tap the file, then <b class="ui">Add Shortcut</b>.</p>
       <a class="btn" data-goatcounter-click="add-shortcut" href="shortcuts/Spend%20Tracker.shortcut">Add “Spend Tracker”</a>
-      <a class="btn secondary" data-goatcounter-click="add-auto" href="shortcuts/Spend%20Tracker%20Auto.shortcut">Add “Spend Tracker Auto”</a>
-      <p class="note">“Spend Tracker Auto” runs Spend Tracker when a bank SMS arrives. Reinstalling? Delete the old ones first, or the SMS triggers get lost.</p>
+      <p class="note">Set up Spend Tracker before? Delete the old “Spend Tracker” and “Spend Tracker Auto” shortcuts first, or the SMS triggers get lost.</p>
     </li>
     <li class="card">
-      <h3>Connect</h3>
-      <p>Open <b class="ui">Shortcuts</b> and tap <b class="ui">Spend Tracker</b> to run it (or open it and tap <b class="ui">▶</b>). Paste the Web app URL and allow what it asks. You'll see <b class="ui">Connected ✅</b>.</p>
+      <h3>Run it once</h3>
+      <p>Open <b class="ui">Shortcuts</b> and tap <b class="ui">Spend Tracker</b> (or open it and tap <b class="ui">▶</b>). Allow what it asks. You'll see <b class="ui">Ready ✅</b>.</p>
+    </li>
+    <li class="card">
+      <h3>Add the widget</h3>
+      <p>Long-press your home screen → <b class="ui">+</b> → <b class="ui">Scriptable</b> → pick a size → <b class="ui">Add Widget</b>. Then long-press the widget → <b class="ui">Edit Widget</b> → <b class="ui">Script</b> → <b class="ui">Spend Tracker</b>.</p>
     </li>
   </ol>
-  <p><b>Done.</b> Your next bank SMS appears in your Sheet within about a minute.</p>
+  <p><b>Done.</b> Your next bank SMS shows up on your home screen.</p>
 
   <h2>Using it</h2>
   <ul class="checks">
-    <li><b>Categories:</b> pick one in the Transactions tab. It's remembered for that payee from then on.</li>
-    <li><b>Cash:</b> tap Spend Tracker any time and enter the amount.</li>
-    <li><b>Same small payment every morning</b>, like auto fares? The Sheet asks you once. You can also add your own rule in the Rules tab.</li>
-    <li><b>Summary</b> and <b>Analytics</b> show each month and each category.</li>
-    <li><b>Home-screen widget</b> with a daily spending graph (optional): <a href="connected.html#widget">set it up</a>.</li>
+    <li><b>Tap the widget</b> to open your dashboard: months, categories, budgets, rules and export.</li>
+    <li><b>Categories:</b> tap a payment and pick one. It's remembered for that payee from then on.</li>
+    <li><b>Cash:</b> in the dashboard, tap <b>Add cash</b>.</li>
+    <li><b>Same small payment every morning</b>, like auto fares? It asks you once what they are.</li>
   </ul>
 
   <h2>Questions</h2>
   <details><summary>Which banks work?</summary>
-    <p>Debit and card SMS from most Indian banks, including HDFC, SBI, ICICI, Axis, Kotak, Union Bank, PNB, Bank of Baroda, Canara and IDFC FIRST. If a message isn't counted, it appears in the Skipped tab with the reason.</p></details>
+    <p>Debit and card SMS from most Indian banks, including HDFC, SBI, ICICI, Axis, Kotak, Union Bank, PNB, Bank of Baroda, Canara and IDFC FIRST. If a message isn't counted, the dashboard's “Skipped messages” shows it with the reason.</p></details>
   <details><summary>Does it read all my messages?</summary>
-    <p>No. It runs only on messages containing “debit”, “spent” or “sent Rs”. OTP messages are dropped on your phone. Anything that isn't a bank payment is ignored and not saved.</p></details>
-  <details><summary>Starting over with a new copy?</summary>
-    <p>Your phone remembers the Sheet it's connected to. In the Setup tab of the <b>old</b> Sheet, type <b>yes</b> next to “New phone?”. Then tap Spend Tracker: it says it's no longer connected and asks for the new Web app URL.</p></details>
+    <p>No. It runs only on messages containing “debit”, “spent” or “sent Rs”. OTP messages are dropped before anything is saved. Anything that isn't a bank payment is ignored and not saved.</p></details>
+  <details><summary>Where is my data?</summary>
+    <p>In <b>Files › iCloud Drive › Scriptable › Spend Tracker</b>, in your own iCloud. You can export everything as a CSV from the dashboard any time and open it in Numbers, Excel or Google Sheets.</p></details>
   <details><summary>New phone?</summary>
-    <p>In the Setup tab of your Sheet, type <b>yes</b> next to “New phone?”. Then add the shortcuts on the new phone and run Spend Tracker once.</p></details>
-  <details><summary>How do I stop it or remove it?</summary>
-    <p>Delete the two shortcuts. To remove the script's access, go to <a href="https://myaccount.google.com/permissions">myaccount.google.com/permissions</a> → Spend Tracker → Remove access. Deleting the Sheet deletes everything.</p></details>
+    <p>Your data comes along with iCloud. On the new phone, install Scriptable, add the shortcut and run it once.</p></details>
+  <details><summary>How do I remove it?</summary>
+    <p>Delete the Spend Tracker shortcut, delete the Spend Tracker script in Scriptable, and delete the Spend Tracker folder in Files › iCloud Drive › Scriptable.</p></details>
+  <details><summary>Prefer Google Sheets?</summary>
+    <p>There's also a <a href="sheets.html">Google Sheets version</a>. It takes longer to set up.</p></details>
   <details><summary>Android?</summary>
     <p>Not yet.</p></details>
-  <details><summary>Does it cost anything?</summary>
-    <p>No, it's free.</p></details>
 
   <footer>
     <p>A personal project, provided as-is for personal use. Not affiliated with any bank, Google or Apple. This page uses no cookies. It counts visits and button taps anonymously with <a href="https://www.goatcounter.com">GoatCounter</a>, and never sees anything about your payments.</p>

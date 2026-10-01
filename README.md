@@ -1,26 +1,29 @@
 # Spend Tracker
 
-Bank SMS on your iPhone → your own Google Sheet, sorted into categories. Free, no app, no bank login.
+Bank SMS on your iPhone → your home screen, sorted into categories. Free, no sign-up, no bank login.
 
 **Set it up:** https://ismailwangde.github.io/spend-tracker/
 
 ## Where your data goes
 
-- Your bank SMS go from your iPhone to a Google Apps Script web app that runs **in your own Google account**, attached to **your own copy** of the Sheet. Nothing is sent to anyone else.
-- The script asks for one permission only, `spreadsheets.currentonly` (see `script/appsscript.json`): it can open the spreadsheet it's attached to and nothing else. No Gmail, no Drive, no network calls.
-- OTP messages are dropped by the shortcut on the phone, and again by the script.
-- The web app needs a connection code, created the first time you run the shortcut and stored on your phone.
-- The setup pages count visits and button taps with GoatCounter (no cookies, no personal data). After connecting, the shortcut opens `connected.html` once; that page view is how finished setups are counted. Nothing about your payments is ever sent.
+**Phone version (default).** Nothing leaves your iPhone and your own iCloud Drive.
+- One shortcut has three message triggers (“ebit”, “pent”, “ent Rs”). It drops OTP messages, then hands the SMS to Scriptable code inside the shortcut (`phone/core.js`), which reads it and saves it to *iCloud Drive › Scriptable › Spend Tracker*.
+- Running the shortcut by hand installs or updates the Spend Tracker app in Scriptable (`phone/core.js` + `phone/app.js`) and opens it: the dashboard, plus the home-screen widget.
+- No network requests are made with your data.
+
+**Google Sheets version** (`sheets.html`, `script/`, `shortcuts/sheets/`). The SMS go to an Apps Script web app in your own Google account, attached to your own copy of the Sheet. It asks for one permission only, `spreadsheets.currentonly`.
+
+The setup pages count visits and button taps with GoatCounter (no cookies, no personal data). After setup, the shortcut opens `ready.html` (or `connected.html`) once; that page view is how finished setups are counted. Nothing about your payments is ever sent.
 
 ## Files
 
 | Path | What it is |
 |---|---|
-| `script/Code.gs`, `script/appsscript.json` | The Apps Script inside the template Sheet |
-| `shortcuts/Spend Tracker.shortcut` | Connects once, then logs SMS (from the automation) or a cash amount (run by hand) |
-| `shortcuts/Spend Tracker Auto.shortcut` | Message automation: runs Spend Tracker on SMS containing “ebit”, “pent” or “ent Rs” |
-| `script/widget.js` | Optional home-screen widget for the Scriptable app |
-| `tools/make_shortcuts.py` | Builds and signs the two shortcuts (`python3 tools/make_shortcuts.py` on a Mac) |
+| `shortcuts/Spend Tracker.shortcut` | Phone version: SMS triggers + reading and saving SMS + installing the app |
+| `phone/core.js` | Reading bank SMS, storage, categories, rules, monthly totals |
+| `phone/app.js` | Dashboard and widget for Scriptable |
+| `script/`, `shortcuts/sheets/` | Google Sheets version |
+| `tools/make_shortcuts.py` | Builds and signs the shortcuts (`python3 tools/make_shortcuts.py` on a Mac) |
 
 ## License
 

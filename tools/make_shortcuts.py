@@ -1,4 +1,10 @@
-"""Builds and signs the two iOS shortcuts for Spend Tracker v1.
+"""Builds and signs the iOS shortcuts for Spend Tracker.
+
+Phone version (shortcuts/Spend Tracker.shortcut): one shortcut with the SMS triggers. A bank SMS is read and
+saved on the phone by Scriptable code inside the shortcut; running it by hand installs or updates the
+Spend Tracker app in Scriptable and opens it. Data stays in iCloud Drive › Scriptable › Spend Tracker.
+
+Google Sheets version (shortcuts/sheets/):
 
   Spend Tracker.shortcut       - first run asks for the Web app URL and connects; after that it logs SMS
                                  (automation / share sheet) or asks for a cash amount (run by hand).
@@ -9,12 +15,15 @@
 Run on a Mac: python3 make_shortcuts.py   (needs the `shortcuts` command, macOS 12+)
 """
 import os
+import json
 import plistlib
 import subprocess
 import uuid
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(os.path.dirname(HERE), 'shortcuts')
+PHONE = os.path.join(os.path.dirname(HERE), 'phone')
+READY_PAGE = 'https://ismailwangde.github.io/spend-tracker/ready.html'
 CODE_FILE = 'spend-tracker-code.txt'  # in iCloud Drive > Shortcuts
 # Opened once after connecting; its page views count finished setups (no data about the user is sent).
 DONE_PAGE = 'https://ismailwangde.github.io/spend-tracker/connected.html'
@@ -232,6 +241,99 @@ def auto_shortcut(keywords=KEYWORDS):
     return shortcut(actions, triggers=triggers, types=['WFWorkflowTypeShowInSearch'], inputs=ALL_INPUT)
 
 
+APP_HEADER = """// Variables used by Scriptable.
+// These must be at the very top of the file. Do not edit.
+// icon-color: deep-green; icon-glyph: rupee-sign;
+// Spend Tracker app: installed and updated by the Spend Tracker shortcut.
+// https://ismailwangde.github.io/spend-tracker/
+"""
+
+INSTALL = """
+const APP = %s;
+const fm = ST.files().fm;
+const path = fm.joinPath(fm.documentsDirectory(), 'Spend Tracker.js');
+let result = 'ready';
+try {
+  if (!fm.fileExists(path)) { fm.writeString(path, APP); result = 'installed'; }
+  else {
+    if (fm.isFileStoredIniCloud(path) && !fm.isFileDownloaded(path)) await fm.downloadFileFromiCloud(path);
+    const cur = fm.readString(path);
+    if (cur.indexOf('// Spend Tracker app') < 0) { // someone else's script with this name: keep it as a copy
+      const old = fm.joinPath(fm.documentsDirectory(), 'Spend Tracker (old).js');
+      if (fm.fileExists(old)) fm.remove(old);
+      fm.writeString(old, cur);
+      fm.writeString(path, APP);
+      result = 'installed';
+    } else if (cur.slice(cur.indexOf('// Spend Tracker app')) !== APP.slice(APP.indexOf('// Spend Tracker app'))) {
+      fm.writeString(path, APP);
+      result = 'updated';
+    }
+  }
+} catch (e) { result = 'error: ' + e.message; }
+Script.setShortcutOutput(result);
+Script.complete();
+"""
+
+LOG_SMS = """
+const out = await ST.logSms((args.plainTexts || [])[0] || '');
+Script.setShortcutOutput(out.notify || '');
+Script.complete();
+"""
+
+
+def read(name):
+    with open(os.path.join(PHONE, name), encoding='utf-8') as fh:
+        return fh.read()
+
+
+def scriptable(uid, code, texts):
+    return {'WFWorkflowActionIdentifier': 'dk.simonbs.Scriptable.RunScriptInlineIntent',
+            'WFWorkflowActionParameters': {'UUID': uid, 'script': code, 'texts': texts, 'runInApp': False,
+                                           'ShowWhenRun': False}}
+
+
+def phone_shortcut():
+    core = read('core.js')
+    app = APP_HEADER + core + '\n' + read('app.js')
+    match, logged, logged_t, setup, setup_t, ready_url, app_url = (new_id() for _ in range(7))
+    g_sms, g_otp, g_note, g_new, g_err = (new_id() for _ in range(5))
+    actions = [
+        # A bank SMS (from the triggers): drop OTPs here, so they never reach any code; then read and save it.
+        if_(g_sms, INPUT, HAS_VALUE),
+        act('text.match', UUID=match, WFMatchTextPattern=OTP, WFMatchTextCaseSensitive=False, text=tok(INPUT)),
+        if_(g_otp, out(match, 'Matches'), HAS_VALUE),
+        act('exit'),
+        end(g_otp),
+        scriptable(logged, core + LOG_SMS, tok(INPUT)),
+        as_text(logged_t, out(logged, 'Script Result')),
+        if_(g_note, out(logged_t, 'Text'), HAS_VALUE),
+        notify(tok(out(logged_t, 'Text'))),
+        end(g_note),
+        # Run by hand: install or update the app in Scriptable, then open it.
+        else_(g_sms),
+        scriptable(setup, core + INSTALL % json.dumps(app), tok('setup')),
+        as_text(setup_t, out(setup, 'Script Result')),
+        if_(g_new, out(setup_t, 'Text'), CONTAINS, 'installed'),
+        alert('Ready ✅', tok('Spend Tracker is set up. Your next bank SMS will be saved on this iPhone.\n\n'
+                             'Last step: add the widget. Long-press your home screen → + → Scriptable → pick a size → '
+                             'Add Widget. Then long-press it → Edit Widget → Script → Spend Tracker.')),
+        act('url', UUID=ready_url, WFURLActionURL=READY_PAGE),
+        act('openurl', WFInput=att(out(ready_url, 'URL'))),
+        act('exit'),
+        end(g_new),
+        if_(g_err, out(setup_t, 'Text'), CONTAINS, 'error'),
+        alert("Couldn't finish setup", tok('Open the Scriptable app once, then run Spend Tracker again.\n\n',
+                                           out(setup_t, 'Text'))),
+        act('exit'),
+        end(g_err),
+        act('url', UUID=app_url, WFURLActionURL='scriptable:///run/Spend%20Tracker'),
+        act('openurl', WFInput=att(out(app_url, 'URL'))),
+        end(g_sms),
+    ]
+    triggers = auto_shortcut()['WFWorkflowTriggers']
+    return shortcut(actions, triggers=triggers, types=['WFWorkflowTypeShowInSearch'], inputs=ALL_INPUT)
+
+
 def shortcut(actions, import_questions=(), triggers=(), types=(), inputs=('WFStringContentItem',)):
     d = {
         'WFQuickActionSurfaces': [],
@@ -252,17 +354,19 @@ def shortcut(actions, import_questions=(), triggers=(), types=(), inputs=('WFStr
     return d
 
 
-def write_signed(name, data):
+def write_signed(name, data, folder=''):
     raw = os.path.join(HERE, name + '.unsigned.shortcut')
     with open(raw, 'wb') as fh:
         plistlib.dump(data, fh, fmt=plistlib.FMT_BINARY)
-    dest = os.path.join(OUT, name + '.shortcut')
+    os.makedirs(os.path.join(OUT, folder), exist_ok=True)
+    dest = os.path.join(OUT, folder, name + '.shortcut')
     subprocess.run(['shortcuts', 'sign', '--mode', 'anyone', '--input', raw, '--output', dest], check=True)
     os.remove(raw)
     print('wrote', dest)
 
 
 if __name__ == '__main__':
-    write_signed('Spend Tracker', main_shortcut())
+    write_signed('Spend Tracker', phone_shortcut())
+    write_signed('Spend Tracker', main_shortcut(), 'sheets')
     # One automation with a trigger per keyword. Tested on iOS 26: all triggers kept, arrives switched on.
-    write_signed('Spend Tracker Auto', auto_shortcut(KEYWORDS))
+    write_signed('Spend Tracker Auto', auto_shortcut(KEYWORDS), 'sheets')
