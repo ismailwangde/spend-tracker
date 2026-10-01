@@ -11,22 +11,25 @@
 </head>
 <body>
 <main>
-  <h1>Your bank SMS, in your own Google Sheet</h1>
-  <p class="lede">Every UPI, card and bank payment on your iPhone shows up in a Google Sheet that only you own, sorted into categories. Free. No app, no bank login.</p>
+  <h1>Your bank SMS, in your own Google Sheet and on your home screen</h1>
+  <p class="lede">Every bank payment you get an SMS for shows up on your home screen and in a Google Sheet you own, sorted into categories. Free. No bank login.</p>
 
   <div class="card">
-    <div class="flow"><span>Your iPhone</span> → <span>Your Google Sheet</span></div>
+    <div class="flow"><span>Your iPhone</span> → <span>Your Google Sheet</span> → <span>Home screen</span></div>
     <ul class="checks">
       <li>Everything stays in your Google account. Nobody else can see it, including the person who made this.</li>
-      <li>The script can open only this one spreadsheet. It has no access to your Gmail, Drive or other files, and Google's permission screen says exactly that.</li>
-      <li>OTP messages are dropped on your phone and never sent anywhere.</li>
+      <li>The script can open only this one spreadsheet. It has no access to your Gmail, Drive or other files.</li>
+      <li>OTP messages are handled on your phone and never sent anywhere.</li>
       <li>All the code is public: <a href="https://github.com/ismailwangde/spend-tracker">read it on GitHub</a>.</li>
     </ul>
   </div>
 
   <h2>Before you start</h2>
-  <p>You need an iPhone on iOS 26 or later and your <b>personal</b> Google account (not a work or school one). It takes about 5 minutes, all on your phone.</p>
-  <p class="note">If Safari is signed in to more than one Google account, check that the right one is selected at each Google screen.</p>
+  <ul class="checks">
+    <li>iOS 26 or later.</li>
+    <li>Only one Google account signed in, and it's a <b>personal</b> one (not work or school).</li>
+    <li>About 5 minutes, all on your phone.</li>
+  </ul>
 
   <h2>Set it up</h2>
   <ol class="steps">
@@ -39,24 +42,24 @@
       <h3>Switch it on</h3>
       <p>In your copy, in Safari:</p>
       <ol class="sub">
-        <li>Tap <b class="ui">aA</b> (or <b class="ui">⋯</b>) → <b class="ui">Request Desktop Website</b>.</li>
+        <li>Tap <b class="ui">aA</b> (or the <b class="ui">☰</b> icon left of docs.google.com) → <b class="ui">Request Desktop Website</b>.</li>
         <li><b class="ui">Extensions → Apps Script</b>.</li>
-        <li><b class="ui">Deploy → New deployment → Deploy</b>.</li>
-        <li><b class="ui">Authorize access</b> → your account → <b class="ui">Continue</b>. Google shows the only permission it needs:
-          <div class="quote">View and manage spreadsheets that this application has been installed in.</div></li>
+        <li><b class="ui">Deploy → New deployment</b>. Check that <b class="ui">Who has access</b> says <b class="ui">Anyone</b>, then tap <b class="ui">Deploy</b>.
+          <div class="quote">“Anyone” only means your shortcut can reach your Sheet without signing in. Nobody can read anything without your phone's connection code.</div></li>
+        <li><b class="ui">Authorize access</b> → your account → <b class="ui">Continue</b>.</li>
         <li>Copy the <b class="ui">Web app URL</b>.</li>
       </ol>
     </li>
     <li class="card">
       <h3>Add the two shortcuts</h3>
-      <p>Tap each one, then <b class="ui">Add Shortcut</b>.</p>
+      <p>Tap each button. Safari downloads the file: tap the <b class="ui">downloads</b> icon in the address bar, tap the file, then <b class="ui">Add Shortcut</b>.</p>
       <a class="btn" data-goatcounter-click="add-shortcut" href="shortcuts/Spend%20Tracker.shortcut">Add “Spend Tracker”</a>
       <a class="btn secondary" data-goatcounter-click="add-auto" href="shortcuts/Spend%20Tracker%20Auto.shortcut">Add “Spend Tracker Auto”</a>
       <p class="note">“Spend Tracker Auto” runs Spend Tracker when a bank SMS arrives. Reinstalling? Delete the old ones first, or the SMS triggers get lost.</p>
     </li>
     <li class="card">
       <h3>Connect</h3>
-      <p>Open <b class="ui">Shortcuts</b>, tap <b class="ui">Spend Tracker</b> and paste the Web app URL. Allow what it asks. You'll see <b class="ui">Connected ✅</b>.</p>
+      <p>Open <b class="ui">Shortcuts</b> and tap <b class="ui">Spend Tracker</b> to run it (or open it and tap <b class="ui">▶</b>). Paste the Web app URL and allow what it asks. You'll see <b class="ui">Connected ✅</b>.</p>
     </li>
   </ol>
   <p><b>Done.</b> Your next bank SMS appears in your Sheet within about a minute.</p>
