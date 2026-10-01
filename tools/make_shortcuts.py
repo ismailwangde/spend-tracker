@@ -15,6 +15,8 @@ import uuid
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(os.path.dirname(HERE), 'shortcuts')
 CODE_FILE = 'spend-tracker-code.txt'  # in iCloud Drive > Shortcuts
+# Opened once after connecting; its page views count finished setups (no data about the user is sent).
+DONE_PAGE = 'https://ismailwangde.github.io/spend-tracker/connected.html'
 # Keep in sync with OTP in Code.gs. OTP texts never leave the phone.
 OTP = (r'(?is)\b(?:otp|one[- ]?time password|verification code)\b\s*(?:is|:|-)?\s*\d{4,8}\b'
        r'|\b\d{4,8}\s+is\s+(?:your|the)\s+(?:otp|one[- ]?time password|verification code)\b'
@@ -116,6 +118,11 @@ def ask(uid, prompt, kind='Text', default=None):
     return act('ask', **p)
 
 
+def open_done_page():
+    u = new_id()
+    return [act('url', UUID=u, WFURLActionURL=DONE_PAGE), act('openurl', WFInput=att(out(u, 'URL')))]
+
+
 def save(src):
     return act('documentpicker.save', UUID=new_id(), WFInput=att(src), WFAskWhereToSave=False,
                WFFileDestinationPath=CODE_FILE, WFSaveFileOverwrite=True)
@@ -140,6 +147,7 @@ def main_shortcut():
         if_(g_ok, out(code_text, 'Text'), CONTAINS, 'k='),
         save(out(code_text, 'Text')),
         connected,
+        *open_done_page(),
         else_(g_ok),
         value(err, 'error', out(claim, 'Contents of URL')),
         ask(pasted, tok("Couldn't connect. ", out(err, 'Dictionary Value'),
@@ -148,6 +156,7 @@ def main_shortcut():
         if_(g_paste, out(pasted, 'Provided Input'), CONTAINS, 'k='),
         save(out(pasted, 'Provided Input')),
         alert('Connected ✅', tok('Your Sheet is connected.')),
+        *open_done_page(),
         end(g_paste),
         end(g_ok),
         act('exit'),

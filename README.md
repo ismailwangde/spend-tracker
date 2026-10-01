@@ -10,6 +10,7 @@ Bank SMS on your iPhone → your own Google Sheet, sorted into categories. Free,
 - The script asks for one permission only, `spreadsheets.currentonly` (see `script/appsscript.json`): it can open the spreadsheet it's attached to and nothing else. No Gmail, no Drive, no network calls.
 - OTP messages are dropped by the shortcut on the phone, and again by the script.
 - The web app needs a connection code, created the first time you run the shortcut and stored on your phone.
+- The setup pages count visits and button taps with GoatCounter (no cookies, no personal data). After connecting, the shortcut opens `connected.html` once; that page view is how finished setups are counted. Nothing about your payments is ever sent.
 
 ## Files
 

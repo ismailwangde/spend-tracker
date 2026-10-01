@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>You're all set · Spend Tracker</title>
+<link rel="stylesheet" href="style.css">
+<script data-goatcounter="https://spendtracker.goatcounter.com/count" async src="https://gc.zgo.at/count.v5.js"
+        integrity="sha384-atnOLvQb9t+jTSipvd75X2yginT4PjVbqDdlJAmxMm+wYElFmeR6EmLP5bYeoRVQ" crossorigin="anonymous"></script>
+</head>
+<body>
+<main>
+  <h1>You're all set ✅</h1>
+  <p class="lede">Your next bank SMS will appear in your Google Sheet in about a minute. There's nothing else you have to do.</p>
+
+  <div class="card">
+    <h3>Good to know</h3>
+    <ul class="checks">
+      <li>New payments appear at the top of the <b>Transactions</b> tab. Open it in the Google Sheets app.</li>
+      <li>Pick a <b>Category</b> once and it's remembered for that payee.</li>
+      <li>Paid cash? Tap <b>Spend Tracker</b> in Shortcuts and enter the amount.</li>
+      <li>If a bank message isn't counted, the <b>Skipped</b> tab says why.</li>
+    </ul>
+  </div>
+
+  <h2 id="widget">Home-screen widget (optional)</h2>
+  <p>A widget that shows this month's total, a bar for each day and your top categories.</p>
+  <ol class="steps">
+    <li class="card">
+      <h3>Get Scriptable</h3>
+      <p>A free app that runs small widgets.</p>
+      <a class="btn secondary" href="https://apps.apple.com/app/scriptable/id1405459188">Get Scriptable on the App Store</a>
+    </li>
+    <li class="card">
+      <h3>Copy the widget</h3>
+      <a class="btn" id="copy" href="script/widget.js" data-goatcounter-click="copy-widget">Copy widget code</a>
+      <p class="note" id="copied">Then open Scriptable, tap <b class="ui">+</b>, paste, and tap <b class="ui">Done</b>.</p>
+    </li>
+    <li class="card">
+      <h3>Connect it</h3>
+      <ol class="sub">
+        <li>In the Google Sheets app, open your Sheet's <b class="ui">Setup</b> tab and copy the <b class="ui">Connection code</b>.</li>
+        <li>In Scriptable, tap the new script to run it, paste the code and tap <b class="ui">Connect</b>. You'll see a preview.</li>
+      </ol>
+    </li>
+    <li class="card">
+      <h3>Put it on your home screen</h3>
+      <p>Long-press the home screen → <b class="ui">Edit → Add Widget → Scriptable</b> → pick <b class="ui">Large</b> → <b class="ui">Add Widget</b>. Then long-press the widget → <b class="ui">Edit Widget</b> → <b class="ui">Script</b> → pick the one you pasted.</p>
+    </li>
+  </ol>
+
+  <footer>
+    <p><a href="./">Setup page</a> · A personal project, provided as-is for personal use. Not affiliated with any bank, Google or Apple. This page uses no cookies. It counts visits anonymously with <a href="https://www.goatcounter.com">GoatCounter</a>.</p>
+  </footer>
+</main>
+<script>
+  // Copy the widget's code in one tap. Falls back to opening the file if the clipboard is blocked.
+  const btn = document.getElementById('copy');
+  let code = '';
+  fetch('script/widget.js').then(r => r.text()).then(t => { code = t; }).catch(() => {});
+  btn.addEventListener('click', e => {
+    if (!code || !navigator.clipboard) return;
+    e.preventDefault();
+    navigator.clipboard.writeText(code).then(() => {
+      btn.textContent = 'Copied ✓';
+      document.getElementById('copied').innerHTML = 'Now open Scriptable, tap <b class="ui">+</b>, paste, and tap <b class="ui">Done</b>.';
+    }, () => { location.href = 'script/widget.js'; });
+  });
+</script>
+</body>
+</html>
