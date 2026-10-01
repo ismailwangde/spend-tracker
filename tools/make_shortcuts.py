@@ -129,27 +129,33 @@ def save(src):
                WFFileDestinationPath=CODE_FILE, WFSaveFileOverwrite=True)
 
 
+def as_text(uid, src):
+    return act('detect.text', UUID=uid, WFInput=att(src))
+
+
 def connect(prompt):
     """Ask for the Web app URL, claim a connection code and save it, then stop.
-    Falls back to pasting the code from the Setup tab (e.g. when the Sheet is already connected)."""
-    q, claim_url, claim, code, code_text, err, pasted = (new_id() for _ in range(7))
+    Falls back to pasting the code from the Setup tab (e.g. when the Sheet is already connected).
+    Replies are checked as text before any dictionary lookup: a reply that is a web page (iOS asking
+    its one-time "allow connecting?" question mid-request) would otherwise stop the shortcut with an error."""
+    q, warm, claim_url, claim, reply, code, code_text, pasted = (new_id() for _ in range(8))
     g_ok, g_paste = new_id(), new_id()
     done = [alert('Connected ✅', tok('Your Sheet is connected.')), *open_done_page()]
     return [
         ask(q, prompt),
+        # Harmless first contact, so iOS asks its permission questions here and not during the claim.
+        fetch(warm, tok(out(q, 'Provided Input'))),
         text(claim_url, tok(out(q, 'Provided Input'), '?claim=1')),
         fetch(claim, tok(out(claim_url, 'Text'))),
-        value(code, 'code', out(claim, 'Contents of URL')),
-        act('detect.text', UUID=code_text, WFInput=att(out(code, 'Dictionary Value'))),
-        # Same checks and save as the paste path below, which is known to work on iOS 26.
-        if_(g_ok, out(code_text, 'Text'), CONTAINS, 'k='),
+        as_text(reply, out(claim, 'Contents of URL')),
+        if_(g_ok, out(reply, 'Text'), CONTAINS, '"code":"https'),
+        value(code, 'code', out(reply, 'Text')),
+        as_text(code_text, out(code, 'Dictionary Value')),
         save(out(code_text, 'Text')),
         *done,
         else_(g_ok),
-        value(err, 'error', out(claim, 'Contents of URL')),
-        ask(pasted, tok("Couldn't connect. ", out(err, 'Dictionary Value'),
-                        '\n\nIf the Setup tab of your Sheet shows a connection code, paste it here. '
-                        'Otherwise check the Web app URL and try again.')),
+        ask(pasted, tok("Couldn't connect automatically.\n\nIf the Setup tab of your Sheet shows a connection code, "
+                        'paste it here. Otherwise check the Web app URL and try again.')),
         if_(g_paste, out(pasted, 'Provided Input'), CONTAINS, 'k='),
         save(out(pasted, 'Provided Input')),
         *done,
@@ -160,8 +166,8 @@ def connect(prompt):
 
 
 def main_shortcut():
-    f, conn, match, sent, note, sms_err, check, check_err, amount, what, cash, msg = (new_id() for _ in range(12))
-    g_new, g_sms, g_otp, g_note, g_lost, g_stale = (new_id() for _ in range(6))
+    f, conn, match, sent, sent_t, note, check, check_t, amount, what, cash, cash_t, msg = (new_id() for _ in range(13))
+    g_new, g_sms, g_otp, g_note, g_lost, g_stale, g_added = (new_id() for _ in range(7))
     actions = [
         act('documentpicker.open', UUID=f, WFGetFilePath=CODE_FILE, WFFileErrorIfNotFound=False,
             WFShowFilePicker=False),
@@ -169,7 +175,7 @@ def main_shortcut():
         if_(g_new, out(f, 'File'), NO_VALUE),
         *connect('Paste your Web app URL\n(Apps Script → Deploy → Manage deployments → Web app URL)'),
         end(g_new),
-        act('detect.text', UUID=conn, WFInput=att(out(f, 'File'))),
+        as_text(conn, out(f, 'File')),
         # From an automation or the share sheet: send the SMS, unless it is an OTP.
         if_(g_sms, INPUT, HAS_VALUE),
         act('text.match', UUID=match, WFMatchTextPattern=OTP, WFMatchTextCaseSensitive=False, text=tok(INPUT)),
@@ -177,20 +183,20 @@ def main_shortcut():
         act('exit'),
         end(g_otp),
         fetch(sent, tok(out(conn, 'Text')), 'POST', [('text', tok(INPUT))]),
-        value(note, 'notify', out(sent, 'Contents of URL')),
-        if_(g_note, out(note, 'Dictionary Value'), HAS_VALUE),
+        as_text(sent_t, out(sent, 'Contents of URL')),
+        if_(g_note, out(sent_t, 'Text'), CONTAINS, '"notify"'),
+        value(note, 'notify', out(sent_t, 'Text')),
         notify(tok(out(note, 'Dictionary Value'))),
         end(g_note),
         # The saved code stopped working (new copy of the Sheet, or "New phone?" was used).
-        value(sms_err, 'error', out(sent, 'Contents of URL')),
-        if_(g_lost, out(sms_err, 'Dictionary Value'), CONTAINS, 'bad code'),
+        if_(g_lost, out(sent_t, 'Text'), CONTAINS, 'bad code'),
         notify(tok("Spend Tracker isn't connected to your Sheet any more. Open Shortcuts and tap Spend Tracker to fix it.")),
         end(g_lost),
         # Run by hand: check the connection, then a cash expense.
         else_(g_sms),
         fetch(check, tok(out(conn, 'Text'))),
-        value(check_err, 'error', out(check, 'Contents of URL')),
-        if_(g_stale, out(check_err, 'Dictionary Value'), CONTAINS, 'bad code'),
+        as_text(check_t, out(check, 'Contents of URL')),
+        if_(g_stale, out(check_t, 'Text'), CONTAINS, 'bad code'),
         *connect('This phone is no longer connected to your Sheet (a new copy, or "New phone?" was used).\n\n'
                  'Paste your Web app URL to connect again:'),
         end(g_stale),
@@ -198,8 +204,13 @@ def main_shortcut():
         ask(what, 'What was it for?', 'Text', 'Cash'),
         fetch(cash, tok(out(conn, 'Text')), 'POST',
               [('amount', tok(out(amount, 'Provided Input'))), ('note', tok(out(what, 'Provided Input')))]),
-        value(msg, 'message', out(cash, 'Contents of URL')),
+        as_text(cash_t, out(cash, 'Contents of URL')),
+        if_(g_added, out(cash_t, 'Text'), CONTAINS, '"message"'),
+        value(msg, 'message', out(cash_t, 'Text')),
         notify(tok(out(msg, 'Dictionary Value'))),
+        else_(g_added),
+        notify(tok("Couldn't add it. Check your internet connection and try again.")),
+        end(g_added),
         end(g_sms),
     ]
     return shortcut(actions, types=['ActionExtension'])
