@@ -637,7 +637,7 @@ async function home(db) {
       actionRow(table, '❓ ' + r.note, 'Tap to tell me what these are', async () => { await answerRule(db, r); render(); });
     });
     if (s.uncategorized) {
-      actionRow(table, `🏷 ${s.uncategorized} payment${s.uncategorized > 1 ? 's' : ''} need a category`, 'Tap to sort them',
+      actionRow(table, `🏷 ${s.uncategorized} payment${s.uncategorized > 1 ? 's need' : ' needs'} a category`, 'Tap to sort them',
         async () => { await listScreen(db, 'No category yet', t => t.date.slice(0, 7) === s.key && !t.category); render(); });
     }
 
