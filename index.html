@@ -26,7 +26,7 @@
 
   <h2>Before you start</h2>
   <ul class="checks">
-    <li>iOS 27 or later (Settings › General › Software Update).</li>
+    <li>iOS 26 or later. Setup is quickest on iOS 27.</li>
     <li>About 4 minutes, all on your phone.</li>
   </ul>
 
@@ -43,9 +43,20 @@
       <a class="btn" data-goatcounter-click="add-shortcut" href="shortcuts/Spend%20Tracker.shortcut">Add “Spend Tracker”</a>
       <p class="note">Set up Spend Tracker before? Delete the old “Spend Tracker” and “Spend Tracker Auto” shortcuts first, or the SMS triggers get lost.</p>
     </li>
-    <li class="card">
+    <li class="card" id="step-sms">
       <h3>Switch on the SMS triggers</h3>
-      <p>Your iPhone adds them switched off. In <b class="ui">Shortcuts</b>, tap <b class="ui">⋯</b> on <b class="ui">Spend Tracker</b>. At the top are 3 <b class="ui">When I receive a message</b> blocks. On each one, tap <b class="ui">where ›</b> and turn on <b class="ui">Automation</b>. Leave <b class="ui">Confirm Before Run</b> off.</p>
+      <p class="note">Which iOS? Settings › General › About › iOS Version.</p>
+      <details open><summary>On iOS 27</summary>
+        <p>Your iPhone adds them switched off. In <b class="ui">Shortcuts</b>, tap <b class="ui">⋯</b> on <b class="ui">Spend Tracker</b>. At the top are 3 <b class="ui">When I receive a message</b> blocks. On each one, tap <b class="ui">where ›</b> and turn on <b class="ui">Automation</b>. Leave <b class="ui">Confirm Before Run</b> off.</p></details>
+      <details><summary>On iOS 26</summary>
+        <p>Make 3 automations, one for each word: <b class="ui">ebit</b>, <b class="ui">pent</b> and <b class="ui">ent Rs</b>.</p>
+        <ol class="sub">
+          <li>In <b class="ui">Shortcuts</b>, open the <b class="ui">Automation</b> tab and tap <b class="ui">+</b>.</li>
+          <li>Tap <b class="ui">Message</b>. Next to <b class="ui">Message Contains</b>, type the word exactly as shown.</li>
+          <li>Choose <b class="ui">Run Immediately</b>, then <b class="ui">Next</b>.</li>
+          <li>Pick <b class="ui">Spend Tracker</b>.</li>
+        </ol>
+        <p>Repeat for the other two words.</p></details>
     </li>
     <li class="card">
       <h3>Run it once</h3>
@@ -68,7 +79,7 @@
 
   <h2>Questions</h2>
   <details><summary>A payment didn't show up?</summary>
-    <p>Check that all 3 SMS triggers are switched on (step 3). Then tap the widget: it refreshes on its own only every 15 minutes or so. If the payment still isn't there, open <b>More › Skipped messages</b> in the dashboard to see why it wasn't counted.</p></details>
+    <p>Check that all 3 SMS triggers are switched on, or on iOS 26 that all 3 automations exist (step 3). Then tap the widget: it refreshes on its own only every 15 minutes or so. If the payment still isn't there, open <b>More › Skipped messages</b> in the dashboard to see why it wasn't counted.</p></details>
   <details><summary>Which banks work?</summary>
     <p>Debit and card SMS from most Indian banks, including HDFC, SBI, ICICI, Axis, Kotak, Union Bank, PNB, Bank of Baroda, Canara and IDFC FIRST. If a message isn't counted, the dashboard's “Skipped messages” shows it with the reason.</p></details>
   <details><summary>Does it read all my messages?</summary>
@@ -81,8 +92,6 @@
     <p>Delete the Spend Tracker shortcut, delete the Spend Tracker script in Scriptable, and delete the Spend Tracker folder in Files › iCloud Drive › Scriptable.</p></details>
   <details><summary>Prefer Google Sheets?</summary>
     <p>There's also a <a href="sheets.html">Google Sheets version</a>. It takes longer to set up.</p></details>
-  <details><summary>On iOS 26?</summary>
-    <p>Update to iOS 27 first. On iOS 26 a shortcut can't carry its own SMS triggers, so payments wouldn't be saved.</p></details>
   <details><summary>Android?</summary>
     <p>Not yet.</p></details>
 
