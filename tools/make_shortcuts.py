@@ -10,14 +10,17 @@ Google Sheets version (shortcuts/sheets/):
                                  (automation / share sheet) or asks for a cash amount (run by hand).
                                  If the saved code stops working, a manual run reconnects.
   Spend Tracker Auto.shortcut  - message automation (ebit / pent / ent Rs) that runs it on bank SMS.
-                                 Works on iOS 26 only when the triggers have no Sender field.
 
-Run on a Mac: python3 make_shortcuts.py   (needs the `shortcuts` command, macOS 12+)
+Run on a Mac: python3 make_shortcuts.py   (needs macOS 27: older `shortcuts sign` silently drops the message
+triggers, so every file is unpacked after signing and checked for them). The triggers need iOS 27 on the phone
+and arrive switched off.
 """
 import os
 import json
 import plistlib
+import struct
 import subprocess
+import tempfile
 import uuid
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -35,8 +38,7 @@ OTP = (r'(?is)\b(?:otp|one[- ]?time password|verification code)\b\s*(?:is|:|-)?\
 KEYWORDS = ['ebit', 'pent', 'ent Rs']
 
 HAS_VALUE, NO_VALUE, CONTAINS = 100, 101, 99
-# Input types of a message automation made on iOS 26 (from a real shared automation). With only
-# WFStringContentItem, iOS dropped the message trigger on import.
+# Input types of a message automation made on the iPhone (from a real shared automation).
 ALL_INPUT = ['WFAppContentItem', 'WFAppStoreAppContentItem', 'WFArticleContentItem', 'WFContactContentItem',
              'WFDateContentItem', 'WFEmailAddressContentItem', 'WFFolderContentItem', 'WFGenericFileContentItem',
              'WFImageContentItem', 'WFiTunesProductContentItem', 'WFLocationContentItem', 'WFDCMapsLinkContentItem',
@@ -362,11 +364,33 @@ def write_signed(name, data, folder=''):
     dest = os.path.join(OUT, folder, name + '.shortcut')
     subprocess.run(['shortcuts', 'sign', '--mode', 'anyone', '--input', raw, '--output', dest], check=True)
     os.remove(raw)
-    print('wrote', dest)
+    kept = len(unpack(dest).get('WFWorkflowTriggers', []))
+    if kept != len(data.get('WFWorkflowTriggers', [])):
+        os.remove(dest)
+        raise SystemExit(f'{dest}: signing kept {kept} of {len(data["WFWorkflowTriggers"])} triggers. Sign on macOS 27.')
+    print('wrote', dest, f'({kept} triggers)' if kept else '')
+
+
+def unpack(path):
+    """The shortcut inside a signed file (an Apple Encrypted Archive that is signed, not encrypted)."""
+    with open(path, 'rb') as fh:
+        b = fh.read()
+    size = struct.unpack('<I', b[8:12])[0]
+    cert = plistlib.loads(b[12:12 + size])['SigningCertificateChain'][0]
+    with tempfile.TemporaryDirectory() as d:
+        pub = subprocess.run(['openssl', 'x509', '-inform', 'der', '-noout', '-pubkey'], input=cert,
+                             capture_output=True, check=True).stdout
+        with open(os.path.join(d, 'key.pem'), 'wb') as fh:
+            fh.write(pub)
+        subprocess.run(['aea', 'decrypt', '-i', path, '-o', os.path.join(d, 'x.aar'), '-sign-pub',
+                        os.path.join(d, 'key.pem')], check=True, capture_output=True)
+        subprocess.run(['aa', 'extract', '-i', os.path.join(d, 'x.aar'), '-d', d], check=True, capture_output=True)
+        with open(os.path.join(d, 'Shortcut.wflow'), 'rb') as fh:
+            return plistlib.load(fh)
 
 
 if __name__ == '__main__':
     write_signed('Spend Tracker', phone_shortcut())
     write_signed('Spend Tracker', main_shortcut(), 'sheets')
-    # One automation with a trigger per keyword. Tested on iOS 26: all triggers kept, arrives switched on.
+    # One automation with a trigger per keyword.
     write_signed('Spend Tracker Auto', auto_shortcut(KEYWORDS), 'sheets')
