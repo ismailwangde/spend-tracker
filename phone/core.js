@@ -393,7 +393,8 @@ const ST = (() => {
   function setCategory(db, tx, category) {
     tx.category = category;
     const key = payeeKey(tx);
-    if (key && category) {
+    // "Not spending" (money back, own transfer) is about this payment, so it isn't remembered for the payee.
+    if (key && category && category !== NOT_SPENDING) {
       db.payees[key] = { label: String(tx.payee || tx.merchant).trim(), category };
       db.txs.forEach(t => { if (!t.category && payeeKey(t) === key) t.category = category; });
       db.save('payees');
@@ -498,7 +499,7 @@ const ST = (() => {
   const DAY_NAMES = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
   // "Weekdays", "Weekends", "Mon-Fri", "Sat, Sun" -> [day numbers], or null for any day.
   function daysOf(s) {
-    s = norm(s);
+    s = norm(s).replace(/\s*-\s*/g, '-');
     if (!s || /^(any|all|every ?day|daily)$/.test(s)) return null;
     if (/^week ?days?$/.test(s)) return [1, 2, 3, 4, 5];
     if (/^week ?ends?$/.test(s)) return [0, 6];
@@ -510,6 +511,13 @@ const ST = (() => {
       for (let d = a; ; d = (d + 1) % 7) { out.add(d); if (d === b) break; }
     });
     return out.size ? Array.from(out) : null;
+  }
+  // True when every word in a Days box is understood (empty means any day).
+  function daysOk(s) {
+    s = norm(s).replace(/\s*-\s*/g, '-');
+    if (!s || /^(any|all|every ?day|daily|week ?days?|week ?ends?)$/.test(s)) return true;
+    return s.split(/\s*(?:,|\/|&|\band\b)\s*|\s+/).filter(Boolean)
+      .every(p => p.split('-').every(x => x.length >= 3 && DAY_NAMES.indexOf(x.slice(0, 3)) >= 0 && /^[a-z]+$/.test(x)));
   }
   function median(xs) {
     const s = xs.slice().sort((a, b) => a - b);
@@ -531,5 +539,5 @@ const ST = (() => {
 
   return { VERSION, NOT_SPENDING, BRANDS, files, open, logSms, addCash, setCategory, fillBlanks, summary, toCsv,
     parseSms, categorize, context, decorate, parseRule, ruleMatches, covers, suggestion, payeeKey, sortTxs,
-    clock, clockMins, daysOf, hash, inr, ymd, parseYmd, monthName };
+    clock, clockMins, daysOf, daysOk, hash, inr, ymd, parseYmd, monthName };
 })();

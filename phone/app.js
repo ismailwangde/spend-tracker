@@ -476,6 +476,14 @@ async function editCategory(db, c) {
     if ((await b.presentAlert()) !== 0) return;
     const name = b.textFieldValue(0).trim();
     if (!name || name === c.name) return;
+    if (db.cats.some(x => x !== c && x.name.toLowerCase() === name.toLowerCase())) {
+      const e = new Alert();
+      e.title = `There's already a category called ${name}`;
+      e.message = `To move ${c.name}'s payments there, delete ${c.name} and pick ${name} for them.`;
+      e.addAction('OK');
+      await e.presentAlert();
+      return;
+    }
     const old = c.name;
     c.name = name;
     db.txs.forEach(t => { if (t.category === old) t.category = name; });
@@ -529,24 +537,52 @@ async function rulesScreen(db) {
   await table.present(false);
 }
 
+// What's wrong with the rule form's boxes, or '' if nothing. Typos are caught here, not silently ignored.
+function ruleProblem([min, max, from, to, days, payee]) {
+  const amount = s => s === '' || /^\d+(\.\d+)?$/.test(s);
+  if (!amount(min) || !amount(max)) return 'Amounts should be numbers, like 20.';
+  if (min !== '' && max !== '' && Number(min) > Number(max)) return '“Amount from” is bigger than “Amount to”.';
+  for (const t of [from, to]) if (t !== '' && ST.clockMins(t) === null) return `I couldn't read the time “${t}”. Write it like 8:30 AM.`;
+  if (!ST.daysOk(days)) return `I couldn't read the days “${days}”. Use Any, Weekdays, Weekends, or days like Mon-Fri or Sat, Sun.`;
+  if (min === '' && max === '' && from === '' && to === '' && !ST.daysOf(days) && payee === '') {
+    return 'Fill in at least one box: an amount, a time, the days or the payee.';
+  }
+  return '';
+}
+
 async function ruleForm(db, r) {
-  const a = new Alert();
-  a.title = 'Rule';
-  a.message = 'Leave a box empty if it doesn\'t matter. Times like 8:00 AM. Days: Any, Weekdays, Weekends or Mon-Fri.';
-  a.addTextField('Amount from (₹)', r.min === null || r.min === undefined ? '' : String(r.min)).setNumberPadKeyboard();
-  a.addTextField('Amount to (₹)', r.max === null || r.max === undefined ? '' : String(r.max)).setNumberPadKeyboard();
-  a.addTextField('Time from', r.from === null || r.from === undefined || r.from === '' ? '' : ST.clock(r.from));
-  a.addTextField('Time to', r.to === null || r.to === undefined || r.to === '' ? '' : ST.clock(r.to));
-  a.addTextField('Days', r.days || 'Any');
-  a.addTextField('Payee contains', r.payee || '');
-  a.addAction('Next: pick category');
-  a.addCancelAction('Cancel');
-  if ((await a.presentAlert()) < 0) return false;
-  const v = i => a.textFieldValue(i).trim();
+  const blank = v => v === null || v === undefined || v === '';
+  let v = [blank(r.min) ? '' : String(r.min), blank(r.max) ? '' : String(r.max), blank(r.from) ? '' : ST.clock(r.from),
+    blank(r.to) ? '' : ST.clock(r.to), r.days || 'Any', r.payee || ''];
+  for (;;) {
+    const a = new Alert();
+    a.title = 'Rule';
+    a.message = 'Leave a box empty if it doesn\'t matter. Times like 8:00 AM. Days: Any, Weekdays, Weekends or Mon-Fri.';
+    a.addTextField('Amount from (₹)', v[0]).setNumberPadKeyboard();
+    a.addTextField('Amount to (₹)', v[1]).setNumberPadKeyboard();
+    a.addTextField('Time from', v[2]);
+    a.addTextField('Time to', v[3]);
+    a.addTextField('Days', v[4]);
+    a.addTextField('Payee contains', v[5]);
+    a.addAction('Next: pick category');
+    a.addCancelAction('Cancel');
+    if ((await a.presentAlert()) < 0) return false;
+    v = v.map((_, i) => a.textFieldValue(i).trim());
+    v[0] = v[0].replace(/[₹,\s]/g, '');
+    v[1] = v[1].replace(/[₹,\s]/g, '');
+    const problem = ruleProblem(v);
+    if (!problem) break;
+    const b = new Alert();
+    b.title = 'Check the rule';
+    b.message = problem;
+    b.addAction('Fix it');
+    b.addCancelAction('Cancel');
+    if ((await b.presentAlert()) < 0) return false;
+  }
   const cat = await pickCategory(db, r.category, 'Payments matching this rule are…');
   if (!cat) return false;
-  Object.assign(r, { min: v(0) ? Number(v(0)) : '', max: v(1) ? Number(v(1)) : '', from: ST.clockMins(v(2)),
-    to: ST.clockMins(v(3)), days: v(4) || 'Any', payee: v(5), category: cat, status: 'on' });
+  Object.assign(r, { min: v[0] ? Number(v[0]) : '', max: v[1] ? Number(v[1]) : '', from: ST.clockMins(v[2]),
+    to: ST.clockMins(v[3]), days: v[4] || 'Any', payee: v[5], category: cat, status: 'on' });
   return true;
 }
 
