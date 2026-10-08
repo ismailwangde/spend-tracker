@@ -21,12 +21,15 @@ import plistlib
 import struct
 import subprocess
 import tempfile
+import time
 import uuid
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(os.path.dirname(HERE), 'shortcuts')
 PHONE = os.path.join(os.path.dirname(HERE), 'phone')
-READY_PAGE = 'https://ismailwangde.github.io/spend-tracker/ready.html'
+# After a first install the shortcut opens the Spend Tracker app (not a web page: opening a website from a shortcut
+# makes iOS ask to "send 1 text item" to it). The app then opens ready.html once; its views count finished setups.
+OPEN_APP_FIRST_TIME = 'scriptable:///run/Spend%20Tracker?setup=1'
 CODE_FILE = 'spend-tracker-code.txt'  # in iCloud Drive > Shortcuts
 # Opened once after connecting; its page views count finished setups (no data about the user is sent).
 DONE_PAGE = 'https://ismailwangde.github.io/spend-tracker/connected.html'
@@ -248,12 +251,14 @@ APP_HEADER = """// Variables used by Scriptable.
 // icon-color: deep-green; icon-glyph: rupee-sign;
 // Spend Tracker app: installed and updated by the Spend Tracker shortcut.
 // https://ismailwangde.github.io/spend-tracker/
-"""
+// build %s
+""" % time.strftime('%Y%m%d%H%M')
 
 INSTALL = """
 const APP = %s;
 const fm = ST.files().fm;
 const path = fm.joinPath(fm.documentsDirectory(), 'Spend Tracker.js');
+const build = s => Number((s.match(/^\\/\\/ build (\\d+)$/m) || [0, 0])[1]);
 let result = 'ready';
 try {
   if (!fm.fileExists(path)) { fm.writeString(path, APP); result = 'installed'; }
@@ -266,7 +271,7 @@ try {
       fm.writeString(old, cur);
       fm.writeString(path, APP);
       result = 'installed';
-    } else if (cur.slice(cur.indexOf('// Spend Tracker app')) !== APP.slice(APP.indexOf('// Spend Tracker app'))) {
+    } else if (build(APP) > build(cur)) { // never replaces a newer app with this shortcut's older copy
       fm.writeString(path, APP);
       result = 'updated';
     }
@@ -319,7 +324,7 @@ def phone_shortcut():
         alert('Ready ✅', tok('Spend Tracker is set up. Your next bank SMS will be saved on this iPhone.\n\n'
                              'Last step: add the widget. Long-press your home screen → + → Scriptable → pick a size → '
                              'Add Widget. Then long-press it → Edit Widget → Script → Spend Tracker.')),
-        act('url', UUID=ready_url, WFURLActionURL=READY_PAGE),
+        act('url', UUID=ready_url, WFURLActionURL=OPEN_APP_FIRST_TIME),
         act('openurl', WFInput=att(out(ready_url, 'URL'))),
         act('exit'),
         end(g_new),

@@ -718,7 +718,14 @@ async function home(db) {
   await table.present(true);
 }
 
+const READY_PAGE = 'https://ismailwangde.github.io/spend-tracker/ready.html';
+
 async function main() {
+  // Opened by the shortcut right after a first install: show the widget steps on the setup site.
+  if (!config.runsInWidget && !config.runsInAccessoryWidget && (args.queryParameters || {}).setup) {
+    Safari.open(READY_PAGE);
+    return;
+  }
   const db = await ST.open();
   if (config.runsInWidget || config.runsInAccessoryWidget) {
     Script.setWidget(buildWidget(ST.summary(db), config.widgetFamily || 'large'));
